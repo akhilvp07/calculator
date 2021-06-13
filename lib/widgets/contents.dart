@@ -10,18 +10,28 @@ class Contents extends StatefulWidget {
 }
 
 class _ContentsState extends State<Contents> {
-  final _amountController = TextEditingController();
-  final _interestController = TextEditingController();
-  final _yearsController = TextEditingController();
+  static const MAX_AMOUNT = 100000.0;
+  static const MAX_INTEREST = 50.0;
+  static const MAX_YEARS = 50.0;
+
+  final _amountController = TextEditingController(
+    text: '1000',
+  );
+  final _interestController = TextEditingController(
+    text: '8',
+  );
+  final _yearsController = TextEditingController(
+    text: '3',
+  );
 
   var _currentAmount = 1000.0;
   var _currentInterest = 8.0;
-  var _currentYears = 3;
+  var _currentYears = 3.0;
   var _futureValue = 0.0;
   var _investedValue = 1000.0;
   var _widthFactor = 0.0;
 
-  double _fvCalculate(double amount, double interest, int years) {
+  double _fvCalculate(double amount, double interest, double years) {
     _futureValue = Finance.fv(
             rate: interest / 100 / 12,
             nper: years * 12,
@@ -36,10 +46,44 @@ class _ContentsState extends State<Contents> {
         _widthFactor = 0.5;
       if (_widthFactor <= 0) _widthFactor = 0.5;
     });
-    print(_investedValue);
-    print(_futureValue);
-    print(_widthFactor);
     return _futureValue;
+  }
+
+  void _yearsChanged(newValue) {
+    if (double.parse(newValue) >= MAX_YEARS) {
+      newValue = MAX_YEARS.toString();
+    }
+    setState(() {
+      _currentYears = double.parse(newValue);
+      if (newValue != _yearsController.text) {
+        _yearsController.text = double.parse(newValue).toStringAsFixed(0);
+      }
+    });
+  }
+
+  void _interestChanged(newValue) {
+    if (double.parse(newValue) >= MAX_INTEREST) {
+      newValue = MAX_INTEREST.toString();
+    }
+    setState(() {
+      _currentInterest = double.parse(newValue);
+      if (newValue != _interestController.text) {
+        _interestController.text = double.parse(newValue).toStringAsFixed(0);
+      }
+    });
+  }
+
+/* Hits when  the entered amount changes */
+  void _amountChanged(String newValue) {
+    if (double.parse(newValue) >= MAX_AMOUNT) {
+      newValue = MAX_AMOUNT.toString();
+    }
+    setState(() {
+      _currentAmount = double.parse(newValue);
+      if (newValue != _amountController.text) {
+        _amountController.text = double.parse(newValue).toStringAsFixed(0);
+      }
+    });
   }
 
   @override
@@ -52,27 +96,17 @@ class _ContentsState extends State<Contents> {
             labelStyle: Theme.of(context).textTheme.headline6,
           ),
           keyboardType: TextInputType.numberWithOptions(decimal: true),
-          onChanged: (newValue) {
-            setState(() {
-              _currentAmount = double.parse(newValue);
-            });
-          },
+          onChanged: (newValue) => _amountChanged(newValue),
           controller: _amountController,
           autofocus: true,
         ),
         Slider(
-          value: _currentAmount.toDouble(),
+          value: _currentAmount,
           min: 0.0,
-          max: 100000.0,
+          max: MAX_AMOUNT,
           divisions: 10,
           label: '$_currentAmount',
-          onChanged: (double newValue) {
-            setState(() {
-              _currentAmount = newValue.roundToDouble();
-              _amountController.text =
-                  newValue.roundToDouble().toStringAsFixed(0);
-            });
-          },
+          onChanged: (newValue) => _amountChanged(newValue.toString()),
         ),
         TextField(
           decoration: InputDecoration(
@@ -80,27 +114,17 @@ class _ContentsState extends State<Contents> {
             labelStyle: Theme.of(context).textTheme.headline6,
           ),
           keyboardType: TextInputType.numberWithOptions(decimal: true),
-          onChanged: (newValue) {
-            setState(() {
-              _currentInterest = double.parse(newValue);
-            });
-          },
+          onChanged: (newValue) => _interestChanged(newValue),
           controller: _interestController,
           autofocus: true,
         ),
         Slider(
           value: _currentInterest.toDouble(),
           min: 0.0,
-          max: 50.0,
+          max: MAX_INTEREST,
           divisions: 10,
           label: '$_currentInterest',
-          onChanged: (double newValue) {
-            setState(() {
-              _currentInterest = newValue.roundToDouble();
-              _interestController.text =
-                  newValue.roundToDouble().toStringAsFixed(0);
-            });
-          },
+          onChanged: (newValue) => _interestChanged(newValue.toString()),
         ),
         TextField(
           decoration: InputDecoration(
@@ -108,26 +132,17 @@ class _ContentsState extends State<Contents> {
             labelStyle: Theme.of(context).textTheme.headline6,
           ),
           keyboardType: TextInputType.numberWithOptions(decimal: true),
-          onChanged: (newValue) {
-            setState(() {
-              _currentYears = int.parse(newValue);
-            });
-          },
+          onChanged: (newValue) => _yearsChanged(newValue),
           controller: _yearsController,
           autofocus: true,
         ),
         Slider(
           value: _currentYears.toDouble(),
           min: 0.0,
-          max: 50.0,
+          max: MAX_YEARS,
           divisions: 10,
           label: '$_currentYears',
-          onChanged: (double newValue) {
-            setState(() {
-              _currentYears = newValue.round();
-              _yearsController.text = newValue.round().toStringAsFixed(0);
-            });
-          },
+          onChanged: (newValue) => _yearsChanged(newValue.toString()),
         ),
         Container(
           height: 40,
