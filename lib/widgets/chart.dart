@@ -10,13 +10,27 @@ class Chart extends StatelessWidget {
     //return LayoutBuilder(builder: (ctx, constraints) {
     return Stack(children: [
       Container(
-        color: Theme.of(context).primaryColor,
+        decoration: BoxDecoration(
+          color: Theme.of(context).primaryColor,
+          border: Border.all(
+            color: Theme.of(context).buttonColor,
+            width: 1,
+          ),
+          borderRadius: BorderRadius.circular(10),
+        ),
       ),
       FractionallySizedBox(
         widthFactor: widthFactor,
         heightFactor: 1,
         child: Container(
-          color: Theme.of(context).accentColor,
+          decoration: BoxDecoration(
+            color: Theme.of(context).accentColor,
+            border: Border.all(
+              color: Theme.of(context).buttonColor,
+              width: 1,
+            ),
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       )
     ]);

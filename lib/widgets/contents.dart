@@ -1,8 +1,16 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:finance/finance.dart';
+import 'package:flutter/rendering.dart';
+import 'package:intl/intl.dart';
 
 import './chart.dart';
+import '../widgets/amount.dart';
+import '../widgets/interest.dart';
+import '../widgets/years.dart';
+import '../assets/constants.dart' as Constants;
+
+enum RadioValue { sip, lumpsum }
 
 class Contents extends StatefulWidget {
   @override
@@ -10,10 +18,6 @@ class Contents extends StatefulWidget {
 }
 
 class _ContentsState extends State<Contents> {
-  static const MAX_AMOUNT = 100000.0;
-  static const MAX_INTEREST = 50.0;
-  static const MAX_YEARS = 50.0;
-
   final _amountController = TextEditingController(
     text: '1000',
   );
@@ -23,35 +27,38 @@ class _ContentsState extends State<Contents> {
   final _yearsController = TextEditingController(
     text: '3',
   );
+  final indianCurrency = NumberFormat.currency(locale: "HI", name: "₹ ");
 
   var _currentAmount = 1000.0;
   var _currentInterest = 8.0;
   var _currentYears = 3.0;
-  var _futureValue = 0.0;
-  var _investedValue = 1000.0;
+  var _futureValue = 0.00;
+  var _investedValue = 1000.0 * 12.0 * 3.0;
   var _widthFactor = 0.0;
+  var _radioValue = RadioValue.sip;
 
-  double _fvCalculate(double amount, double interest, double years) {
-    _futureValue = Finance.fv(
-            rate: interest / 100 / 12,
-            nper: years * 12,
-            pmt: -amount,
-            pv: -amount) -
-        amount;
-    _investedValue = years * 12 * amount;
+  void _fvCalculate(double amount, double interest, double years) {
+    _futureValue = (Finance.fv(
+                rate: interest / 100 / 12,
+                nper: years * 12,
+                pmt: -amount,
+                pv: -amount) -
+            amount)
+        .roundToDouble();
+    _investedValue = (years * 12 * amount).roundToDouble();
     setState(() {
-      if (_futureValue != 0)
+      if (_futureValue > 0)
         _widthFactor = _investedValue / _futureValue;
       else
-        _widthFactor = 0.5;
+        _widthFactor = 1;
       if (_widthFactor <= 0) _widthFactor = 0.5;
     });
-    return _futureValue;
+    print(_widthFactor);
   }
 
   void _yearsChanged(newValue) {
-    if (double.parse(newValue) >= MAX_YEARS) {
-      newValue = MAX_YEARS.toString();
+    if (double.parse(newValue) >= Constants.MAX_YEARS) {
+      newValue = Constants.MAX_YEARS.toString();
     }
     setState(() {
       _currentYears = double.parse(newValue);
@@ -59,11 +66,16 @@ class _ContentsState extends State<Contents> {
         _yearsController.text = double.parse(newValue).toStringAsFixed(0);
       }
     });
+    _fvCalculate(
+      _currentAmount,
+      _currentInterest,
+      _currentYears,
+    );
   }
 
   void _interestChanged(newValue) {
-    if (double.parse(newValue) >= MAX_INTEREST) {
-      newValue = MAX_INTEREST.toString();
+    if (double.parse(newValue) >= Constants.MAX_INTEREST) {
+      newValue = Constants.MAX_INTEREST.toString();
     }
     setState(() {
       _currentInterest = double.parse(newValue);
@@ -71,12 +83,17 @@ class _ContentsState extends State<Contents> {
         _interestController.text = double.parse(newValue).toStringAsFixed(0);
       }
     });
+    _fvCalculate(
+      _currentAmount,
+      _currentInterest,
+      _currentYears,
+    );
   }
 
 /* Hits when  the entered amount changes */
   void _amountChanged(String newValue) {
-    if (double.parse(newValue) >= MAX_AMOUNT) {
-      newValue = MAX_AMOUNT.toString();
+    if (double.parse(newValue) >= Constants.MAX_AMOUNT) {
+      newValue = Constants.MAX_AMOUNT.toString();
     }
     setState(() {
       _currentAmount = double.parse(newValue);
@@ -84,75 +101,120 @@ class _ContentsState extends State<Contents> {
         _amountController.text = double.parse(newValue).toStringAsFixed(0);
       }
     });
+    _fvCalculate(
+      _currentAmount,
+      _currentInterest,
+      _currentYears,
+    );
+  }
+
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _fvCalculate(
+          _currentAmount,
+          _currentInterest,
+          _currentYears,
+        ));
   }
 
   @override
   Widget build(BuildContext context) {
     return ListView(
+      padding: EdgeInsets.all(10),
       children: [
-        TextField(
-          decoration: InputDecoration(
-            labelText: 'Amount',
-            labelStyle: Theme.of(context).textTheme.headline6,
+        Row(
+          children: [
+            Expanded(
+              child: ListTile(
+                title: Text('SIP'),
+                leading: Radio(
+                  value: RadioValue.sip,
+                  groupValue: _radioValue,
+                  onChanged: (RadioValue value) {
+                    setState(() {
+                      _radioValue = value;
+                    });
+                  },
+                ),
+              ),
+            ),
+            Expanded(
+              child: ListTile(
+                title: Text('Lumpsum'),
+                leading: Radio(
+                  value: RadioValue.lumpsum,
+                  groupValue: _radioValue,
+                  onChanged: (RadioValue value) {
+                    setState(() {
+                      _radioValue = value;
+                    });
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
+        Amount(
+          _amountChanged,
+          _amountController,
+          _currentAmount,
+        ),
+        Interest(
+          _interestChanged,
+          _interestController,
+          _currentInterest,
+        ),
+        Years(
+          _yearsChanged,
+          _yearsController,
+          _currentYears,
+        ),
+        Card(
+          //height: 40,
+          elevation: 4,
+          shadowColor: Theme.of(context).accentColor,
+          color: Theme.of(context).primaryColorLight,
+          child: SizedBox(
+            height: 40,
+            child: Row(
+              children: [
+                Text(
+                  'Invested Amount: ',
+                  style: Theme.of(context).textTheme.headline6,
+                ),
+                Text(
+                  indianCurrency.format(_investedValue),
+                  style: Theme.of(context).textTheme.headline6,
+                ),
+              ],
+            ),
           ),
-          keyboardType: TextInputType.numberWithOptions(decimal: true),
-          onChanged: (newValue) => _amountChanged(newValue),
-          controller: _amountController,
-          autofocus: true,
         ),
-        Slider(
-          value: _currentAmount,
-          min: 0.0,
-          max: MAX_AMOUNT,
-          divisions: 10,
-          label: '$_currentAmount',
-          onChanged: (newValue) => _amountChanged(newValue.toString()),
-        ),
-        TextField(
-          decoration: InputDecoration(
-            labelText: 'Interest',
-            labelStyle: Theme.of(context).textTheme.headline6,
-          ),
-          keyboardType: TextInputType.numberWithOptions(decimal: true),
-          onChanged: (newValue) => _interestChanged(newValue),
-          controller: _interestController,
-          autofocus: true,
-        ),
-        Slider(
-          value: _currentInterest.toDouble(),
-          min: 0.0,
-          max: MAX_INTEREST,
-          divisions: 10,
-          label: '$_currentInterest',
-          onChanged: (newValue) => _interestChanged(newValue.toString()),
-        ),
-        TextField(
-          decoration: InputDecoration(
-            labelText: 'Years',
-            labelStyle: Theme.of(context).textTheme.headline6,
-          ),
-          keyboardType: TextInputType.numberWithOptions(decimal: true),
-          onChanged: (newValue) => _yearsChanged(newValue),
-          controller: _yearsController,
-          autofocus: true,
-        ),
-        Slider(
-          value: _currentYears.toDouble(),
-          min: 0.0,
-          max: MAX_YEARS,
-          divisions: 10,
-          label: '$_currentYears',
-          onChanged: (newValue) => _yearsChanged(newValue.toString()),
-        ),
-        Container(
-          height: 40,
-          child: Text(
-            _fvCalculate(
-              _currentAmount,
-              _currentInterest,
-              _currentYears,
-            ).roundToDouble().toStringAsFixed(0),
-            style: Theme.of(context).textTheme.headline6,
+        Card(
+          //height: 40,
+          elevation: 4,
+          shadowColor: Theme.of(context).accentColor,
+          color: Theme.of(context).primaryColorLight,
+          child: SizedBox(
+            height: 40,
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 1,
+                  child: Text(
+                    'Total Amount: ',
+                    style: Theme.of(context).textTheme.headline6,
+                  ),
+                ),
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    indianCurrency.format(_futureValue),
+                    style: Theme.of(context).textTheme.headline6,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         Container(
