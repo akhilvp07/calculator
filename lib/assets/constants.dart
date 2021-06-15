@@ -1,3 +1,3 @@
-  const MAX_AMOUNT = 100000.0;
-  const MAX_INTEREST = 50.0;
-  const MAX_YEARS = 50.0;
+const int MAX_AMOUNT = 200000;
+const MAX_INTEREST = 30.0;
+const MAX_YEARS = 30.0;

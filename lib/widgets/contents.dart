@@ -9,8 +9,7 @@ import '../widgets/amount.dart';
 import '../widgets/interest.dart';
 import '../widgets/years.dart';
 import '../assets/constants.dart' as Constants;
-
-enum RadioValue { sip, lumpsum }
+import '../assets/enums.dart' as Enums;
 
 class Contents extends StatefulWidget {
   @override
@@ -29,30 +28,45 @@ class _ContentsState extends State<Contents> {
   );
   final indianCurrency = NumberFormat.currency(locale: "HI", name: "₹ ");
 
-  var _currentAmount = 1000.0;
+  int _currentAmount = 1000;
   var _currentInterest = 8.0;
   var _currentYears = 3.0;
   var _futureValue = 0.00;
   var _investedValue = 1000.0 * 12.0 * 3.0;
-  var _widthFactor = 0.0;
-  var _radioValue = RadioValue.sip;
+  var _widthFactor = 0.02;
+  var _radioValue = Enums.RadioValue.sip;
 
-  void _fvCalculate(double amount, double interest, double years) {
-    _futureValue = (Finance.fv(
-                rate: interest / 100 / 12,
-                nper: years * 12,
-                pmt: -amount,
-                pv: -amount) -
-            amount)
-        .roundToDouble();
-    _investedValue = (years * 12 * amount).roundToDouble();
-    setState(() {
-      if (_futureValue > 0)
-        _widthFactor = _investedValue / _futureValue;
-      else
-        _widthFactor = 1;
-      if (_widthFactor <= 0) _widthFactor = 0.5;
-    });
+  void _fvCalculate(int amount, double interest, double years) {
+    if (_radioValue == Enums.RadioValue.sip) {
+      setState(() {
+        _futureValue = (Finance.fv(
+                    rate: interest / 100 / 12,
+                    nper: years * 12,
+                    pmt: -amount,
+                    pv: -amount) -
+                amount)
+            .roundToDouble();
+        _investedValue = (years * 12 * amount).roundToDouble();
+        if (_futureValue > 0)
+          _widthFactor = _investedValue / _futureValue;
+        else
+          _widthFactor = 1;
+        if (_widthFactor < 0.02) _widthFactor = 0.02;
+      });
+    } else {
+      setState(() {
+        _futureValue =
+            Finance.fv(rate: interest / 100, nper: years, pmt: 0, pv: -amount)
+                .roundToDouble();
+        _investedValue = amount.toDouble();
+
+        if (_futureValue > 0)
+          _widthFactor = _investedValue / _futureValue;
+        else
+          _widthFactor = 1;
+        if (_widthFactor < 0.02) _widthFactor = 0.02;
+      });
+    }
     print(_widthFactor);
   }
 
@@ -92,14 +106,18 @@ class _ContentsState extends State<Contents> {
 
 /* Hits when  the entered amount changes */
   void _amountChanged(String newValue) {
+    if (newValue == "") {
+      newValue = "0.0";
+      print('Null value');
+    } else if (newValue != _amountController.text) {
+      _amountController.text = double.parse(newValue).round().toString();
+    }
+    print(newValue);
     if (double.parse(newValue) >= Constants.MAX_AMOUNT) {
       newValue = Constants.MAX_AMOUNT.toString();
     }
     setState(() {
-      _currentAmount = double.parse(newValue);
-      if (newValue != _amountController.text) {
-        _amountController.text = double.parse(newValue).toStringAsFixed(0);
-      }
+      _currentAmount = double.parse(newValue).round();
     });
     _fvCalculate(
       _currentAmount,
@@ -128,11 +146,16 @@ class _ContentsState extends State<Contents> {
               child: ListTile(
                 title: Text('SIP'),
                 leading: Radio(
-                  value: RadioValue.sip,
+                  value: Enums.RadioValue.sip,
                   groupValue: _radioValue,
-                  onChanged: (RadioValue value) {
+                  onChanged: (Enums.RadioValue value) {
                     setState(() {
                       _radioValue = value;
+                      _fvCalculate(
+                        _currentAmount,
+                        _currentInterest,
+                        _currentYears,
+                      );
                     });
                   },
                 ),
@@ -142,11 +165,16 @@ class _ContentsState extends State<Contents> {
               child: ListTile(
                 title: Text('Lumpsum'),
                 leading: Radio(
-                  value: RadioValue.lumpsum,
+                  value: Enums.RadioValue.lumpsum,
                   groupValue: _radioValue,
-                  onChanged: (RadioValue value) {
+                  onChanged: (Enums.RadioValue value) {
                     setState(() {
                       _radioValue = value;
+                      _fvCalculate(
+                        _currentAmount,
+                        _currentInterest,
+                        _currentYears,
+                      );
                     });
                   },
                 ),
@@ -158,6 +186,7 @@ class _ContentsState extends State<Contents> {
           _amountChanged,
           _amountController,
           _currentAmount,
+          _radioValue,
         ),
         Interest(
           _interestChanged,

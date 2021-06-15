@@ -29,7 +29,8 @@ class Interest extends StatelessWidget {
         ),
         Slider(
           value: currentInterest.toDouble(),
-          min: 0.0,
+          divisions: 2 * Constants.MAX_INTEREST.round() - 1,
+          min: 0.5,
           max: Constants.MAX_INTEREST,
           label: '$currentInterest %',
           onChanged: (newValue) => interestChanged(newValue.toString()),

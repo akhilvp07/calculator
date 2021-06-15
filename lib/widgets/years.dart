@@ -7,11 +7,7 @@ class Years extends StatelessWidget {
   final yearsController;
   final currentYears;
 
-  Years(
-    this.yearsChanged,
-    this.yearsController,
-    this.currentYears
-  );
+  Years(this.yearsChanged, this.yearsController, this.currentYears);
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +25,8 @@ class Years extends StatelessWidget {
         ),
         Slider(
           value: currentYears.toDouble(),
-          min: 0.0,
+          divisions: Constants.MAX_YEARS.round() - 1,
+          min: 1.0,
           max: Constants.MAX_YEARS,
           label: '$currentYears',
           onChanged: (newValue) => yearsChanged(newValue.toString()),

@@ -1,0 +1,4 @@
+enum RadioValue {
+  sip,
+  lumpsum,
+}
